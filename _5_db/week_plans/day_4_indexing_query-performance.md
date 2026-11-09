@@ -2,7 +2,24 @@
 
 # 1. What is an index?
 
-An index is a data structure maintained by the database to help locate rows efficiently without scanning the entire table.
+- An index is a data structure maintained by the database helps to find rows efficiently without scanning the entire table.
+- An index is a separate data structure, usually a B-tree, managed by the database. It stores the column values in sorted order along with pointers to the actual rows, so the database can find rows efficiently instead of scanning the entire table. It is just like a book's index: if I want chapter nine, I use the page number to jump straight to it, and I don't have to turn every page.
+
+# How does a database find rows without an index?
+ 
+- An index is a separate data structure, usually a B-tree, managed by the database. It stores the column values in sorted order along with pointers to the actual rows, so the database can find rows efficiently instead of scanning the entire table. It is just like a book's index: if I want chapter nine, I use the page number to jump straight to it, and I don't have to turn every page.
+
+# Why index is fast? Which data structure is used?
+
+- An index is fast because it uses a B-tree. A B-tree keeps the values sorted, and each node has many children, so the tree stays very shallow. Searching takes O(log n) time, which means even millions of rows need only a few steps instead of scanning the whole table.
+
+# How does a search work in a B-tree? Describe the path from the root to a leaf.
+
+- In a B-tree, the search starts at the root and goes down to a leaf. At each node, I compare the key, for example 20, with the keys in that node and find the range it falls in. If it is smaller, I follow the left child, and if it is larger, I follow the right child, or a middle one if the node has more keys. I repeat this at every level until I reach the leaf, which holds the key and the pointer to the row.
+
+# What is the relationship between a primary key and an index?
+
+- When we create a primary key on a column, MySQL automatically creates a unique index on that column. In InnoDB it is the clustered index, which means the table rows themselves are stored in primary key order.
 
 # 2. Why do we need indexes?
 
@@ -32,14 +49,15 @@ An index on user_id can make this lookup much faster on a large table.
    ↓
    Index
    ↓
-   Locate matching entries
+   Find relevant location
    ↓
-   Fetch rows
+   Fetch row
+
 So fewer rows may need to be examined.
 
 # 4. Why can't we index every column?
 
-Indexes consume storage and add overhead to INSERT, UPDATE, and DELETE operations because the indexes also need to be maintained. Therefore, I create indexes based on actual query patterns rather than indexing every column.
+Indexes improve read performance, but they consume storage and add overhead to INSERT, UPDATE, and DELETE operations because the indexes also need to be maintained. Therefore, I create indexes based on actual query patterns rather than indexing every column.
 
 # 5. What is a B-tree index?
 
@@ -74,7 +92,6 @@ CREATE INDEX idx_orders_user_status
 ON orders(user_id, status);
 
 It can help queries that use:
-
 WHERE user_id = ?
 
 or:
@@ -89,33 +106,24 @@ depending on the query and optimizer.
 Because the database organizes the composite index according to the specified column order.
 
 For:
-
 INDEX(user_id, status)
-
 user_id is the leading column.
-
 Therefore it can efficiently support access patterns beginning with user_id.
 
 Changing it to:
-
 INDEX(status, user_id)
-
 creates a different index with different useful query patterns.
 
 # 10. What is the leftmost-prefix rule?
 
 For:
-
 INDEX(A, B, C)
-
 the index can generally support prefixes such as:
-
 A
 A + B
 A + B + C
 
 but not necessarily:
-
 B
 C
 B + C
@@ -135,7 +143,7 @@ If almost every row has a different email, searching by email can narrow the res
 
 # 12. What is a full table scan?
 
-A full table scan occurs when the database examines rows throughout the table to find the rows matching the query.
+A full table scan means the database examines rows across the table to find matching data.
 
 Example:
 
@@ -171,11 +179,7 @@ WHERE user_id = 100;
 
 # 16. What does possible_keys mean?
 
-possible_keys shows indexes that MySQL considers potentially usable for the query.
-
-Important:
-
-It doesn't mean MySQL actually used them.
+possible_keys shows indexes that MySQL considers potentially usable for the query. It doesn't mean MySQL actually used them.
 
 # 17. What does key mean?
 
@@ -189,8 +193,6 @@ key           → selected index
 # 18. What does rows mean?
 
 rows is MySQL's estimate of how many rows it expects to examine for that part of the execution plan.
-
-Lower isn't automatically better in every situation, but a huge estimated row count can be a signal worth investigating.
 
 # 19. Why might MySQL not use an available index?
 

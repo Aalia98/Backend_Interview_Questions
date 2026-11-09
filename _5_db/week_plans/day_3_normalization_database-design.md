@@ -147,8 +147,7 @@ Denormalization is the process of combining tables to improve read performance b
 - Read-heavy workload
 - Too many expensive joins
 - Frequently accessed aggregated data
-- Performance requirements/optimizations
-- Reporting/analytics
+- Performance optimizations
 - Reducing query complexity
 
 Example:

@@ -1,8 +1,12 @@
 ## Part 1 — Interview Questions
 
-# 1. What is a database?
+# 1. What is a database? Also, what's the difference between SQL and NoSQL databases?
 
 A database is an organized collection of data that allows applications to store, retrieve, update, and manage data efficiently.
+
+SQL databases are relational databases that generally store data in tables with predefined schemas and use SQL to query data.
+
+NoSQL databases support different data models, such as document-based, key-value, and graph databases. They offer more flexible data structures depending on application requirements.
 
 # 2. What is DBMS?
 
@@ -58,6 +62,24 @@ A UNIQUE constraint can allow NULL values, and its exact behavior with multiple 
 - Primary key is used to uniquely identify each row in a table and it cannot contain NULL values. Also, a table can have only one primary key.
 
 - Unique key also ensures uniqueness of values, but it can allow NULL values, and a table can have multiple unique keys.
+
+# What is a Primary Key and a Foreign Key? Why do we need them in a relational database? Explain with a simple example.
+
+- A primary key uniquely identifies each record in a table. It cannot contain NULL values or duplicate values.
+
+- A foreign key is a column or combination of columns that references a key in another table. It helps maintain referential integrity between tables.
+
+For example, in a users table, id is the primary key. In an orders table, user_id is a foreign key referencing users.id. This establishes a relationship between users and their orders.
+
+# What is the difference between DELETE, TRUNCATE, and DROP in SQL? Explain what happens to the data and the table structure in each case. Also, which one would you use if you wanted to remove all records but keep the table?
+
+- DELETE is used to remove specific rows or all rows from a table. We can use a WHERE condition with DELETE.
+
+- TRUNCATE removes all records from a table but keeps the table structure.
+
+- DROP removes the entire table, including its data and structure.
+
+If I want to remove all records but keep the table, I would use TRUNCATE.
 
 # 11. What is a candidate key?
 
@@ -171,6 +193,16 @@ Foreign keys ensure that relationships between tables remain valid and prevent i
 # 19. What is referential integrity?
 
 Referential integrity means that a foreign-key value must reference a valid key in the related table, unless NULL is allowed by the schema.
+
+# Difference between natural and surrogate keys?
+
+- A natural key is a unique identifier made up of real data that exists in the real world, like an email address or a passport number.
+WHERE AS
+A surrogate key is an artificial identifier, usually a simple auto-incrementing number, created purely for database purposes to uniquely identify a row.
+
+# what is entity integrity?
+
+- Entity integrity is a database rule stating that every table must have a primary key, and that the primary key value must be unique and not null for each row.
 
 # 20. What is a 1:1 relationship?
 

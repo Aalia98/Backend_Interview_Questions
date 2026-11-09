@@ -243,7 +243,6 @@ Use:
     amount
     status
     created_at
-    Practice 1
 
 # 1. Find all users.
 
