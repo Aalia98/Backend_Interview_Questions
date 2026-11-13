@@ -2,12 +2,11 @@
 
 # 1. What is an index?
 
-- An index is a data structure maintained by the database helps to find rows efficiently without scanning the entire table.
 - An index is a separate data structure, usually a B-tree, managed by the database. It stores the column values in sorted order along with pointers to the actual rows, so the database can find rows efficiently instead of scanning the entire table. It is just like a book's index: if I want chapter nine, I use the page number to jump straight to it, and I don't have to turn every page.
 
 # How does a database find rows without an index?
  
-- An index is a separate data structure, usually a B-tree, managed by the database. It stores the column values in sorted order along with pointers to the actual rows, so the database can find rows efficiently instead of scanning the entire table. It is just like a book's index: if I want chapter nine, I use the page number to jump straight to it, and I don't have to turn every page.
+- Without an index, the database has to check every row one by one to find the matching ones. This is called a full table scan. It gets slower as the table grows, because the time grows with the number of rows.
 
 # Why index is fast? Which data structure is used?
 
@@ -20,6 +19,34 @@
 # What is the relationship between a primary key and an index?
 
 - When we create a primary key on a column, MySQL automatically creates a unique index on that column. In InnoDB it is the clustered index, which means the table rows themselves are stored in primary key order.
+
+# What is the difference between clustered and non-clustered indexes?
+
+- In a clustered index, the table data itself is stored in the index order, like a dictionary. In MySQL InnoDB, the primary key is the clustered index. A non-clustered index is a separate sorted structure, like a book's index at the back - it stores the column value with a pointer to the actual row.
+
+# Which is the clustered index in InnoDB (your MySQL engine)?
+
+- In InnoDB, the primary key is the clustered index.
+
+# How many clustered indexes can a table have? Why?
+
+- Only one clustered index is allowed, because the data is physically stored in one sorted order.
+
+# Show how to create an index on the 'status' column of your 'tasks' table—provide the full 'CREATE INDEX' syntax.
+
+- I created an index on the status column using CREATE INDEX. Before the index, EXPLAIN showed type ALL, which means a full table scan, and the key was NULL, so no index was used - all four rows were read. After creating the index, the type changed to ref, the key showed my index idx_status, and only two rows were read. This proves the query now uses the index.
+
+# How will you check whether your query is using an index?
+
+- I use EXPLAIN to check whether the query uses an index. I look at the key and type columns.
+
+# One should know how to read the output of 'EXPLAIN': what do 'type', 'key', and 'rows' each indicate?
+
+- In EXPLAIN, type tells how rows are read - ALL means a full table scan, ref means an index is used. key shows which index is used, or NULL if none. rows is the estimated number of rows examined - lower is better.
+
+# What is a composite index? When would you create one?
+
+- A composite index is an index on multiple columns. I create one when my queries filter on those columns together, for example an index on user_id and status instead of two separate indexes. The column order matters because of the leftmost prefix rule.
 
 # 2. Why do we need indexes?
 
@@ -143,7 +170,8 @@ If almost every row has a different email, searching by email can narrow the res
 
 # 12. What is a full table scan?
 
-A full table scan means the database examines rows across the table to find matching data.
+- A full table scan means the database examines rows across the table to find matching data.
+- The database has to check every row one by one to find the matching ones. This is called a full table scan.
 
 Example:
 

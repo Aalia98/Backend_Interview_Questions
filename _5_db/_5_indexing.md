@@ -131,5 +131,3 @@ With a B-Tree index, the database can traverse the tree structure and quickly na
 # Q. Why do databases use B-Trees instead of Binary Search Trees for indexes?
 
 - Databases use B-Trees instead of Binary Search Trees because BSTs can become unbalanced and degrade to O(n) performance. B-Trees remain balanced and have a very small height because each node stores multiple keys. This reduces disk I/O operations and provides efficient O(log n) lookups, insertions, and deletions.
-
-## 
