@@ -316,3 +316,120 @@ git push origin --delete feature
 ```
 
 `git fetch --prune` removes stale local remote-tracking references. It does not delete ordinary local branches.
+
+### 34. How does Git store data? (snapshots, not differences)
+
+Git stores each commit as a snapshot of the whole project (unchanged files are just linked to the old version). Everything is kept in the hidden `.git` folder as objects: blob (file content), tree (folder), commit (snapshot + message + parent) and a SHA-1 hash ID for each. Branches and tags are just names pointing to commits.
+
+### 35. What is the `.git` folder?
+
+The folder where Git keeps the whole repository: history, objects, branches, config, HEAD. If you delete `.git`, the project is no longer a Git repo (you lose all history). Never edit it by hand.
+
+### 36. What is a good commit message? How often should you commit?
+
+Short summary line in imperative style (for example "Add login validation"), optionally a blank line and a detail. One logical change per commit. Commit small and often; do not commit broken code, secrets or big binaries. Many teams use a prefix like `feat:` / `fix:`.
+
+### 37. What is a pull request (PR)?
+
+A request on GitHub/GitLab to merge your branch into another (usually main). Teammates review the code, comments are added, CI tests run, and after approval it is merged. It is a platform feature, not a Git command.
+
+### 38. SSH vs HTTPS for GitHub
+
+HTTPS: URL with your username and a personal access token (passwords are no longer accepted by GitHub). SSH: uses a key pair; you add the public key to GitHub and never type a password again. Both work; SSH is more convenient for daily use.
+
+### 39. `git config`: how do you set your name and email?
+
+`git config --global user.name "Aalia"` and `git config --global user.email "me@example.com"`. They appear in every commit. `--global` is for all repos, without it only for the current repo. Check with `git config --list`.
+
+### 40. What are the most useful `git log` options?
+
+```bash
+git log --oneline
+git log --oneline --graph --all
+git log -p FILE        # changes made to a file
+git log --author="Aalia"
+git show COMMIT        # one commit in detail
+```
+
+### 41. `git rm` vs deleting a file normally
+
+`git rm file` deletes the file and stages the deletion in one step. If you delete with the file manager, you still need `git add -A` (or `git rm`) to record the deletion. `git rm --cached file` stops tracking but keeps the file on disk.
+
+### 42. `git clean`: what does it do?
+
+Removes untracked files from the working folder. It is destructive, so first do a dry run: `git clean -n`, then `git clean -fd` (files and folders).
+
+### 43. `git blame`: when do you use it?
+
+Shows who last changed each line of a file and in which commit: `git blame FILE`. Used to understand why a line was changed, not to blame people.
+
+### 44. Fast-forward merge vs merge commit (`--no-ff`) vs squash merge
+
+Fast-forward: the target branch has no new commits, so Git just moves the pointer (straight history). Merge commit: Git creates a new commit with two parents, preserving branch history (`--no-ff` forces this). Squash merge: all branch commits become one single commit on the target, giving a clean history but losing individual commits.
+
+### 45. How does a conflict look and how do you resolve it step by step?
+
+Git marks the file:
+```
+<<<<<<< HEAD
+your version
+=======
+incoming version
+>>>>>>> feature
+```
+Open the file, keep the correct code (or combine both), remove the markers, `git add FILE`, then `git commit` (or `git merge --continue`). Run the tests. Tools like VS Code show "Accept current / incoming / both".
+
+### 46. How do you avoid merge conflicts?
+
+Pull/rebase from main often, keep branches short-lived, make small PRs, and talk to teammates when working on the same file.
+
+### 47. Common branching strategies: Git Flow vs trunk-based
+
+Git Flow: long-lived `main` + `develop`, plus feature, release and hotfix branches (more process, for scheduled releases). Trunk-based: everyone merges small changes to `main` frequently with feature flags and CI (faster). Many companies use a simple "feature branch + PR to main".
+
+### 48. Protected branches and code review
+
+Teams protect `main`: no direct push, PR required, at least one approval, CI must pass. So never push straight to main unless the team allows it.
+
+### 49. `HEAD~1` vs `HEAD^`; what is `HEAD~3`?
+
+For normal commits both mean the parent of HEAD. `HEAD~3` means three commits back (following first parents). `HEAD^2` means the second parent of a merge commit.
+
+### 50. How do you revert a merge commit or an already pushed commit?
+
+Pushed commit: `git revert COMMIT` makes a new commit that undoes it (safe for shared branches). Merge commit: `git revert -m 1 MERGE_COMMIT` (`-m 1` keeps the main branch side as the base).
+
+### 51. You committed to the wrong branch. How do you fix it?
+
+If not pushed: create the right branch from here (`git branch correct-branch`), then move the wrong branch back (`git reset --hard HEAD~1`, check first that nothing else is lost). Or cherry-pick the commit onto the correct branch and reset the wrong one.
+
+### 52. You did `git reset --hard` by mistake. Can you get the work back?
+
+Committed work: yes, use `git reflog`, find the old commit and `git branch recovered COMMIT`. Uncommitted changes in the working folder are usually gone.
+
+### 53. `git rebase` vs `git merge` in one line each
+
+Merge keeps true history and adds a merge commit. Rebase replays your commits on top of the latest base to make a straight history (new commit IDs, never on shared branches).
+
+### 54. What are Git hooks?
+
+Scripts in `.git/hooks` that run on events (pre-commit, pre-push, commit-msg). Used for lint, tests and message checks. They are local; teams share them with tools like husky or pre-commit.
+
+### 55. What is CI/CD in simple words?
+
+CI (continuous integration): on every push/PR a server builds the code and runs tests automatically (GitHub Actions, GitLab CI, Jenkins). CD (continuous delivery/deployment): after tests pass, the app is released/deployed automatically or with one click.
+
+### 56. Git cheat sheet: commands to remember
+
+```bash
+git clone URL
+git status
+git add . && git commit -m "msg"
+git switch -c feature
+git push -u origin feature
+git fetch && git pull --ff-only
+git merge feature
+git stash / git stash pop
+git log --oneline --graph
+git reflog
+```

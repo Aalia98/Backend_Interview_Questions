@@ -24,8 +24,7 @@
 
 ### 6. Delete file and folder
 
-- rm file.txt
-- rm -r folderName
+`rm file.txt` deletes a file. `rm -r folder` deletes a folder and everything inside (recursive). `rmdir folder` deletes only an empty folder. There is no recycle bin: deleted files are gone, so check the path first (`ls` before `rm`). `rm -i` asks before each delete.
 
 ### 7. Copy a file
 
@@ -83,7 +82,7 @@ ps -p PID -o pid,ppid,stat,%cpu,%mem,cmd
 
 ### 17. What is top?
 
-- Displays real-time running processes and system usage.
+`top` shows live running processes with CPU and memory use, sorted by CPU by default. Useful keys: `q` quit, `M` sort by memory, `P` sort by CPU, `k` kill a process. `htop` is a friendlier version (may need install).
 
 ### 18. Foreground vs background?
 
@@ -103,7 +102,7 @@ node server.js &
 
 ### 21. What is root /?
 
-- Top-most directory in Linux.
+`/` is the top-most directory of the Linux filesystem; everything lives under it. Do not confuse it with the **root user** (the superuser with full permissions) and with `/root` (the root user's home folder).
 
 ### 22. Absolute vs relative path?
 
@@ -124,8 +123,15 @@ node server.js &
 
 ### 26. What is grep?
 
-- Search text in files.
-- grep "error" log.txt
+`grep` searches for text matching a pattern inside files or command output.
+```bash
+grep "error" log.txt
+grep -i "error" log.txt      # ignore case
+grep -n "error" log.txt      # line numbers
+grep -r "TODO" ./src         # search folders
+grep -v "debug" log.txt      # lines NOT matching
+grep -c "error" log.txt      # count matches
+```
 
 ### 27. What is pipe |?
 
@@ -146,8 +152,14 @@ rm removes files. `-r` removes directories recursively. `-f` avoids prompts and 
 
 ### 30. What is tar?
 
-- Used to archive files.
-- tar -cvf files.tar folder/
+`tar` bundles many files into one archive (and with `-z` compresses it).
+```bash
+tar -cvf files.tar folder/      # create
+tar -czvf files.tar.gz folder/  # create + gzip
+tar -xvf files.tar              # extract
+tar -xzvf files.tar.gz          # extract gzip
+```
+Flags: c create, x extract, v verbose, f file name, z gzip.
 
 ### 31. What are stdin, stdout and stderr? How do you redirect them?
 
@@ -332,3 +344,135 @@ free -h
 df -h
 df -i
 ```
+
+### 51. `head`, `tail`, `wc`: quick file viewing
+
+```bash
+head -n 20 file.txt   # first 20 lines
+tail -n 20 file.txt   # last 20 lines
+wc -l file.txt        # count lines
+```
+
+### 52. `cp -r`, `mv`, `mkdir -p`
+
+`cp -r dir1 dir2` copies a folder. `mv` moves or renames (same command). `mkdir -p a/b/c` creates nested folders in one go.
+
+### 53. Important Linux directories: /bin, /usr, /tmp, /dev, /proc, /root
+
+`/bin` essential commands, `/usr` installed programs, `/tmp` temporary files, `/dev` devices, `/proc` live system and process info, `/root` home of the root user, `/opt` optional software, `/mnt` mount points. (`/home`, `/etc`, `/var` are above.)
+
+### 54. `which`, `whereis`, `man`, `--help`
+
+`which go` shows where a command is. `man ls` opens the manual. `ls --help` gives a short help. Use these when you forget an option.
+
+### 55. Editing files in the terminal: nano and vim basics
+
+nano: easy, `Ctrl+O` save, `Ctrl+X` exit. vim: `i` insert mode, `Esc` normal mode, `:wq` save and quit, `:q!` quit without saving.
+
+### 56. `echo`, `>` and `>>` for writing to files
+
+`echo "hello" > a.txt` overwrites, `echo "more" >> a.txt` appends. `cat a.txt` to check.
+
+### 57. Wildcards and shortcuts: `*`, `?`, `~`, `.`, Tab, Ctrl+C, Ctrl+R
+
+`*` any characters (`*.log`), `?` one character, `~` your home folder, `.` current folder, `..` parent. Tab autocompletes, Ctrl+C stops a running command, Ctrl+R searches history, `!!` repeats the last command.
+
+### 58. How do chmod numbers work? (755, 644, 600)
+
+r=4, w=2, x=1; add them per group: owner, group, others. `7`=rwx, `6`=rw-, `5`=r-x, `4`=r--. So `755` = owner rwx, group and others r-x (scripts, folders). `644` = owner rw, others read (normal files). `600` = only owner (private keys). You can also write `chmod u+x file` (add execute for the user).
+
+### 59. How do you read `ls -l` output?
+
+`-rwxr-xr-- 1 aalia dev 120 Nov 16 app.sh`: first char is type (`-` file, `d` directory, `l` link); then three triplets for owner, group, others; then link count, owner, group, size, date, name.
+
+### 60. Users and groups: `whoami`, `id`, `useradd`, `usermod`
+
+`whoami` current user, `id` user and groups. Admin commands (with sudo): `useradd`, `passwd`, `usermod -aG group user` to add a user to a group. Files have an owner and a group; groups let teams share access.
+
+### 61. Why do you get "Permission denied"? How do you debug it?
+
+Check who you are (`whoami`), the file mode and owner (`ls -l`), and the permissions of parent folders. Fix with `chmod` or `chown` only as much as needed. For a script: it may need `chmod +x`. Do not use `777` as a quick fix.
+
+### 62. How do you find and kill the process using a port?
+
+```bash
+ss -ltnp | grep :8080     # or: lsof -i :8080
+kill PID                  # try normal kill first
+```
+
+### 63. `ps aux | grep myapp`: what is wrong with its output?
+
+The `grep myapp` command itself shows up in the list. Use `pgrep -a myapp` or `ps aux | grep [m]yapp` to avoid it.
+
+### 64. `kill` vs `killall` vs `pkill`
+
+`kill PID` uses the process ID. `pkill name` / `killall name` use the process name (be careful, they can kill several processes).
+
+### 65. Common signals: SIGTERM, SIGKILL, SIGINT, SIGHUP
+
+SIGTERM (15) asks to stop gracefully (default of `kill`). SIGKILL (9) forces stop, cannot be caught. SIGINT (2) is Ctrl+C. SIGHUP (1) terminal closed (some services reload config). A Go server should handle SIGTERM for graceful shutdown.
+
+### 66. `sort`, `uniq`, `cut`, `awk`, `sed`: the everyday text tools
+
+```bash
+sort file.txt | uniq -c | sort -nr      # count duplicates, most first
+cut -d"," -f2 data.csv                  # 2nd column of a CSV
+awk '{print $1}' access.log              # first field of every line
+sed 's/old/new/g' file.txt               # replace text (prints result)
+```
+
+### 67. Example: find the top 5 IPs in an access log
+
+```bash
+awk '{print $1}' access.log | sort | uniq -c | sort -nr | head -5
+```
+This is a favourite interview question: it combines pipes, awk, sort and uniq.
+
+### 68. `less`, `cat`, `tail`: which to use for big files?
+
+Never `cat` a huge log. Use `less` (scroll, `/word` to search, `q` to quit), `tail -n` for the end, `head` for the start, and `grep` to filter.
+
+### 69. Where are logs stored?
+
+Mostly under `/var/log` (system, nginx, auth). For systemd services use `journalctl -u service`. Application logs depend on the app (stdout, a file path in config).
+
+### 70. How do you check disk, memory and CPU quickly?
+
+`df -h` (disk), `du -sh *` (folder sizes), `free -h` (memory), `top` / `htop` (CPU and processes), `uptime` (load).
+
+### 71. Cron: how do you schedule a job?
+
+`crontab -e` and add a line: `minute hour day month weekday command`. Example: `30 2 * * * /home/app/backup.sh` runs every day at 2:30. Check with `crontab -l`. Use full paths and redirect output to a log file.
+
+### 72. `ping`, `curl`, `wget`, `nslookup`/`dig`, `traceroute`: what does each do?
+
+`ping host` checks reachability. `curl URL` makes an HTTP request (see answer above). `wget URL` downloads a file. `nslookup` / `dig domain` check DNS. `traceroute host` shows the network hops. `ip a` shows your IP addresses.
+
+### 73. `ssh` and `scp`: how do you log in to and copy files to a server?
+
+```bash
+ssh user@server-ip
+scp file.txt user@server-ip:/home/user/
+scp user@server-ip:/var/log/app.log .
+```
+Use key-based login (`ssh-keygen`, `ssh-copy-id`) and keep the private key at `chmod 600`.
+
+### 74. How do you deploy and keep a Go app running on Linux?
+
+Build the binary (`go build`), copy it to the server, put config in environment variables, and run it as a **systemd service** (so it restarts on failure and starts on boot), or run it in Docker. Check `systemctl status` and `journalctl -u`. Put Nginx in front as a reverse proxy.
+
+### 75. Basic shell script
+
+```bash
+#!/bin/bash
+name="Aalia"
+if [ -f /tmp/a.txt ]; then
+  echo "exists"
+else
+  echo "hello $name"
+fi
+for f in *.log; do
+  echo "$f"
+done
+```
+Make it executable: `chmod +x script.sh`, run `./script.sh`. `$1` is the first argument, `$?` is the last exit status.

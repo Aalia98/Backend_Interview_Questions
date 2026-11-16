@@ -134,8 +134,7 @@ Client -> ACK
 
 # Q. Why not Two-Way Handshake?
 
-- With only two messages, the client never confirms receiving the server's acknowledgment.
-- This can create half-open connections.
+With two messages (SYN, SYN-ACK) the server never learns that the client received its reply, so the server cannot be sure the client is reachable and has the right sequence number. The third message (ACK) confirms both directions work and that both sides agree on sequence numbers. It also helps avoid old duplicate connection requests creating half-open connections.
 
 # Q. Why does TCP use Four-Way Termination?
 
@@ -173,15 +172,11 @@ Examples:
 
 # Q. Difference between HTTP and HTTPS?
 
-- HTTP	
-Not secure	
-Plain text	
-Port 80	
+HTTP: not secure, data in plain text, port 80.
 
-- HTTPS
-Encrypted
-SSL (Secure Sockets Layer) / TLS (Transport Layer Security) 
-Port 443
+HTTPS: HTTP over TLS, so data is encrypted, cannot be changed on the way, and the server identity is checked using a certificate. Default port 443.
+
+SSL is the old name/older versions; today we use TLS (SSL is deprecated).
 
 # Q. What is a client?
 
@@ -260,14 +255,7 @@ Contains:
 
 # Q. What is Idempotency?
 
-- An operation is idempotent if multiple identical requests produce the same result.
-
-Examples:
-    - GET
-    - PUT
-    - DELETE
-
-- POST is generally not idempotent.
+An operation is idempotent if doing it once or many times gives the same final state. GET, PUT, DELETE are idempotent (delete the same user twice: still deleted). POST is generally not (two POSTs can create two orders). It matters for retries: if a request times out, it is safe to retry an idempotent one. For payments, use an idempotency key.
 
 # Q. What is a Load Balancer?
 
@@ -312,13 +300,7 @@ Backend Server
 
 # Q. Reverse Proxy vs Load Balancer?
 
-| Reverse Proxy                  | Load Balancer       |
-| ------------------------------ | ------------------- |
-| Handles client requests        | Distributes traffic |
-| Can cache responses            | Chooses server      |
-| Often provides SSL termination | Focuses on scaling  |
-
-- Some tools perform both roles.
+A reverse proxy sits in front of servers and handles client requests for them: SSL termination, caching, compression, routing, hiding the backend. A load balancer chooses which server gets each request among many servers, to scale and stay available. Nginx can do both. A load balancer is basically a reverse proxy with a "spread the traffic" job.
 
 # Q. Why not directly query database every time?
 
@@ -327,10 +309,7 @@ Backend Server
 
 # Q. Why use Redis before Database?
 
-- Redis stores frequently accessed data in memory.
-- Typical latency:
-    - Redis: 1 ms
-    - Database: 50-100 ms
+Redis keeps frequently read data in memory, so it is much faster than going to the database on disk (typically about a millisecond or less versus several milliseconds or more, depending on the query). It lowers the load on the database and speeds up responses. Use it for data that is read often and changes rarely (profiles, product lists, sessions).
 
 # Q. What is Cache Hit?
 
@@ -344,13 +323,9 @@ Backend Server
 
 # Q. What is Connection Pooling?
 
-- Instead of creating a new database connection for every request, applications reuse existing connections.
+Instead of opening a new database connection for every request (slow: TCP + auth), the application keeps a set of open connections and reuses them.
 
-Benefits:
-    - Lower latency
-    - Better throughput
-    - Reduced database overhead
-    - Scaling Questions
+Benefits: lower latency, better throughput, less load on the database, a limit on the number of connections. In Go, `sql.DB` is already a connection pool (`SetMaxOpenConns`, `SetMaxIdleConns`).
 
 # Q. Horizontal vs Vertical Scaling?
 
@@ -485,15 +460,15 @@ DB down → API fails → 500
 
 # Q. What is a cookie?
 
-- Small data stored on client.
+A small piece of data the server asks the browser to store (`Set-Cookie` response header). The browser sends it back automatically on every request to that site (`Cookie` header). Used for sessions, login state and preferences. Important flags: `HttpOnly` (JavaScript cannot read it), `Secure` (HTTPS only), `SameSite` (limits cross-site sending, helps against CSRF), `Max-Age`/`Expires`.
 
 # Q. What is CORS?
 
-- Security rule restricting cross-origin access.
+CORS (Cross-Origin Resource Sharing) is a browser rule. A page from one origin (scheme + domain + port) cannot read responses from another origin unless that server allows it with headers like `Access-Control-Allow-Origin`. It is enforced by the browser, not the server; Postman and curl are not affected.
 
 # Q. What is preflight request?
 
-- OPTIONS request to check permissions.
+For some cross-origin requests (methods like PUT/DELETE, or custom headers like Authorization, or JSON content type), the browser first sends an `OPTIONS` request to ask the server if the real request is allowed. The server answers with `Access-Control-Allow-Methods` and `Access-Control-Allow-Headers`. If allowed, the browser sends the real request.
 
 # Q. Query vs Path params?
 
@@ -514,7 +489,7 @@ DB down → API fails → 500
 
 # Q. Why CORS error?
 
-- Server didn’t allow your origin.
+The server did not allow your frontend origin (missing or wrong `Access-Control-Allow-Origin`), or it did not handle the `OPTIONS` preflight request. Fix on the backend: add CORS middleware with the exact allowed origins, methods and headers. Do not use `*` together with cookies/credentials.
 
 # Q. What happens when typing google.com?
 
@@ -551,28 +526,19 @@ Response
 
 # Q. Why HTTPS for login?
 
-- Encrypts passwords.
+HTTPS encrypts everything between browser and server: the password, but also cookies, tokens and form data. It stops attackers on the same Wi-Fi or network from reading or changing it (man-in-the-middle). Passwords are also hashed on the server, but HTTPS protects them while travelling.
 
 # Q. What if server crashes mid-request?
 
-- Client gets 5xx or timeout.
+The client gets a connection error, a timeout or a 5xx (such as 502 from a proxy). The request may or may not have been processed on the server. So clients use timeouts and retries only for idempotent requests (or an idempotency key), and the server should use database transactions so half-done work is rolled back.
 
 # Q. What is Hashing?
 
-- Hashing converts input data into a fixed-length output.
-
-Example:
-mypassword123
-↓
-Hash Function
-↓
-XJ82KDJ29SKDJ82JDJ...
-
-Properties:
-
-Same input → same output
-Fast to compute
-Cannot
+Hashing converts input data into a fixed-length output (a hash) using a hash function.
+```
+mypassword123 -> hash function -> XJ82KDJ29SKDJ82...
+```
+Properties: same input always gives the same output; fast to compute; one-way (you cannot get the original back from the hash); a tiny change in input changes the whole hash.
 
 # Q. Hashing vs Encryption
 
@@ -584,7 +550,7 @@ Cannot
 
 # Q. Salt
 
-Salt is random data added before hashing.
+Salt is random data added to a password before hashing, unique per user. Two users with the same password then get different hashes, and attackers cannot use ready-made tables (rainbow tables). The salt is stored next to the hash (it is not secret).
 
 # Q. Why bcrypt Is Popular?
 
@@ -635,3 +601,162 @@ These are too fast and insecure for passwords.
 # Q. Why bcrypt instead of SHA256?
 
 - SHA256 is designed to be fast, which makes brute force attacks easier. bcrypt is intentionally slow and includes salting, making password cracking significantly more difficult.
+
+###### ------------------------------------- ######
+
+# Q. What is an IP address? IPv4 vs IPv6? Public vs private IP?
+
+An IP address identifies a device on a network. IPv4 is 32-bit (`192.168.1.10`, about 4 billion addresses, running out); IPv6 is 128-bit (`2001:db8::1`, huge space). Private IPs (`10.x.x.x`, `172.16-31.x.x`, `192.168.x.x`) work only inside a local network (home, office, VPC). Public IPs are reachable on the internet. A router uses NAT to let many private devices share one public IP.
+
+# Q. What is localhost / 127.0.0.1?
+
+The loopback address: your own machine. A server listening on `127.0.0.1` accepts connections only from the same machine; `0.0.0.0` means all network interfaces (needed in Docker to reach the app from outside).
+
+# Q. Common DNS record types: A, AAAA, CNAME, MX, NS, TXT
+
+A: domain to IPv4. AAAA: domain to IPv6. CNAME: alias to another domain name. MX: mail servers. NS: name servers of the domain. TXT: text (verification, SPF). TTL says how long a record may be cached.
+
+# Q. What is a port? What is a socket? Well-known ports
+
+An IP address finds the machine; a port (0 to 65535) finds the application on it. A socket is one endpoint of a connection: IP + port (a connection is identified by client IP:port + server IP:port). Common ports: HTTP 80, HTTPS 443, SSH 22, MySQL 3306, PostgreSQL 5432, Redis 6379, DNS 53.
+
+# Q. The network layers in simple words (TCP/IP model)
+
+Application (HTTP, DNS) -> Transport (TCP, UDP) -> Internet (IP) -> Link (Ethernet, Wi-Fi). The OSI model has 7 layers (physical, data link, network, transport, session, presentation, application). Interview tip: say "HTTP is at the application layer, TCP at transport, IP at network".
+
+# Q. What is a TCP connection teardown state like TIME_WAIT? (basic)
+
+After closing, the side that closed first waits in `TIME_WAIT` for a short time so late packets do not confuse a new connection. Many TIME_WAIT sockets on a busy server usually mean connections are not being reused (use keep-alive and connection pooling).
+
+# Q. What is flow control / congestion control in TCP? (one line)
+
+Flow control stops the sender from overwhelming the receiver (window size). Congestion control slows the sender when the network is busy. Both are part of why TCP is reliable.
+
+# Q. What is TLS and what does it give us? Simple TLS handshake
+
+TLS gives encryption (privacy), integrity (data not changed) and authentication (the server is who it says, via a certificate signed by a trusted CA). Handshake in short: client hello (supported versions/ciphers) -> server hello + certificate -> client checks the certificate -> both agree on a shared secret key (key exchange) -> encrypted communication with fast symmetric encryption starts.
+
+# Q. HTTP/1.1 vs HTTP/2 vs HTTP/3
+
+HTTP/1.1: text, one request at a time per connection (browsers open several connections), keep-alive. HTTP/2: binary, many requests multiplexed on one connection, header compression. HTTP/3: runs on QUIC (over UDP) instead of TCP, faster connection setup and no TCP-level blocking when packets are lost.
+
+# Q. What is Keep-Alive?
+
+Keeping the TCP (and TLS) connection open to send several requests, instead of opening a new connection for each (saves handshake time). It is default in HTTP/1.1 (`Connection: keep-alive`). Go's `http.Client` reuses connections, so read and close the response body to allow reuse.
+
+# Q. What does a full HTTP exchange look like? (curl example)
+
+```bash
+curl -i -X POST http://localhost:8080/users \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Aalia"}'
+```
+Request: method, path, headers, body. Response: status line (`HTTP/1.1 201 Created`), headers (`Content-Type: application/json`), body.
+
+# Q. Authentication vs authorization
+
+Authentication: who are you (login). Authorization: what are you allowed to do (permissions, roles). 401 relates to authentication, 403 to authorization.
+
+# Q. Sessions vs JWT: how do they work and when to use which?
+
+Session: after login the server stores session data (in memory/Redis/DB) and gives the browser a session ID in a cookie; the server looks it up on each request (stateful, easy to revoke). JWT: the server signs a token containing user info; the client sends it in `Authorization: Bearer <token>`; the server only verifies the signature (stateless, scales easily, but hard to revoke before expiry). Typical: short-lived access token + refresh token.
+
+# Q. What is a JWT? Structure and common mistakes
+
+Three Base64 parts separated by dots: header (algorithm), payload (claims such as user id, `exp` expiry), signature. The payload is only encoded, not encrypted, so never put secrets in it. Always verify the signature and expiry, use a strong secret/keys, keep tokens short-lived, send over HTTPS.
+
+# Q. Where should the frontend store a token: cookie or localStorage?
+
+`localStorage` is readable by JavaScript, so an XSS attack can steal the token. An `HttpOnly` + `Secure` + `SameSite` cookie cannot be read by JavaScript (safer against XSS), but then you must think about CSRF. Mention this trade-off in the interview.
+
+# Q. What are XSS, CSRF and SQL injection? (one line each)
+
+XSS: attacker injects script into a page that runs in other users' browsers (escape output). CSRF: another site makes the user's browser send an authenticated request (SameSite cookies, CSRF tokens). SQL injection: user input changes the SQL query (use parameterised queries / placeholders).
+
+# Q. What is basic auth vs bearer token vs API key?
+
+Basic: base64 `user:password` in the header (only over HTTPS). Bearer: a token (like JWT) in `Authorization: Bearer ...`. API key: a secret string identifying the calling app, sent in a header.
+
+# Q. HTTP methods: safe and idempotent table
+
+| Method | Safe (no change) | Idempotent |
+|---|---|---|
+| GET | Yes | Yes |
+| HEAD | Yes | Yes |
+| OPTIONS | Yes | Yes |
+| PUT | No | Yes |
+| DELETE | No | Yes |
+| POST | No | No |
+| PATCH | No | Not guaranteed |
+
+# Q. PUT vs POST (create vs replace)
+
+POST creates a new resource where the server chooses the ID (`POST /users`). PUT replaces a resource at a known URL (`PUT /users/5`) and repeating it gives the same result.
+
+# Q. More status codes to remember: 304, 409, 422, 429, 502, 503, 504
+
+304 Not Modified (use your cached copy). 409 Conflict (duplicate email, version conflict). 422 Unprocessable Entity (valid JSON but failed validation). 429 Too Many Requests (rate limit). 502 Bad Gateway (proxy got a bad answer from the backend). 503 Service Unavailable (overloaded or down). 504 Gateway Timeout (backend too slow). Groups: 2xx success, 3xx redirect, 4xx client error, 5xx server error.
+
+# Q. 400 vs 422 vs 404: which code for which case?
+
+400 malformed request (bad JSON, missing required param). 422 well-formed but invalid data (age = -5). 404 resource or route not found.
+
+# Q. How do you choose status codes for a REST API? (example)
+
+Create user: 201. Get user: 200 or 404. Update: 200 (or 204). Delete: 204. Not logged in: 401. Not allowed: 403. Validation failure: 400/422. Duplicate: 409. Server bug/DB down: 500. Return a consistent JSON error body like `{"error":"email already exists"}`.
+
+# Q. What are the REST principles and good REST URL design?
+
+Resources as nouns, HTTP methods as actions, stateless, JSON, proper status codes. Good: `GET /users`, `GET /users/10`, `POST /users`, `PUT /users/10`, `DELETE /users/10`, `GET /users/10/orders`. Bad: `/getUser`, `/deleteUser?id=10`. Add pagination (`?page=2&limit=20`), filtering and versioning (`/v1/users`).
+
+# Q. What is gRPC? gRPC vs REST
+
+gRPC is a framework for service-to-service calls using HTTP/2 and Protocol Buffers (binary, defined in a `.proto` file, generated client/server code). Faster and strongly typed, supports streaming. REST/JSON is simpler, human readable and works in browsers. Use gRPC for internal microservices, REST for public APIs.
+
+# Q. What is WebSocket? WebSocket vs HTTP
+
+WebSocket keeps one persistent two-way connection (started by an HTTP upgrade), so the server can push messages to the client any time (chat, live scores, notifications). Normal HTTP is request-response: the client must ask each time.
+
+# Q. What is API versioning and pagination?
+
+Versioning: keep old clients working when the API changes (`/v1/`, `/v2/`). Pagination: return data in pages (`limit` + `offset`, or cursor based) instead of the whole table.
+
+# Q. What are timeouts, retries and backoff?
+
+Always set timeouts on HTTP and DB calls. Retry only idempotent requests, with exponential backoff (wait 1s, 2s, 4s...) and a maximum count, so you do not overload a struggling service. In Go: `http.Client{Timeout: ...}` and `context.WithTimeout`.
+
+# Q. Forward proxy vs reverse proxy
+
+A forward proxy sits in front of clients (hides the client, e.g. company proxy/VPN). A reverse proxy sits in front of servers (hides the servers, e.g. Nginx).
+
+# Q. What is an API gateway?
+
+A single entry point for microservices: routing, authentication, rate limiting, logging, request transformation. Examples: Kong, AWS API Gateway, Nginx.
+
+# Q. What is rate limiting? Common algorithms
+
+Limiting how many requests a client can make in a time window, to protect the service from abuse. Algorithms: fixed window, sliding window, token bucket, leaky bucket. Response: 429 with `Retry-After`. Often implemented with Redis counters.
+
+# Q. HTTP caching: Cache-Control, ETag, 304
+
+`Cache-Control: max-age=3600` lets the browser/CDN reuse a response for an hour. `ETag` is a version tag of the response; the client sends `If-None-Match`, and the server replies `304 Not Modified` with no body if unchanged. `no-store` means never cache.
+
+# Q. Caching strategies: cache-aside, TTL, invalidation
+
+Cache-aside: app checks Redis; on a miss it reads the DB and stores the result in Redis. TTL (expiry) removes stale data automatically. Invalidation: delete or update the cache entry when the data changes ("there are only two hard things: cache invalidation and naming things").
+
+# Q. Load balancer: Layer 4 vs Layer 7 and sticky sessions
+
+L4 balances by IP/port (TCP), fast and simple. L7 understands HTTP, so it can route by URL or header. Sticky sessions send a user to the same server (needed if session data is in server memory); better to store sessions in Redis so any server works.
+
+# Q. Health checks, scaling and availability terms
+
+Health check: the load balancer calls `/health` on each server and stops sending traffic to failing ones. Availability: system keeps working (redundancy, no single point of failure). Latency: time for a response. Throughput: requests per second.
+
+# Q. How do you store and verify a password in Go?
+
+Use bcrypt: `hash, _ := bcrypt.GenerateFromPassword([]byte(pw), bcrypt.DefaultCost)` and store the hash; on login `bcrypt.CompareHashAndPassword(hash, []byte(pw))`. Never log passwords and never return them in JSON.
+
+# Q. Symmetric vs asymmetric encryption
+
+Symmetric: one shared key for encrypt and decrypt (AES), fast, used for the actual data. Asymmetric: public key encrypts/verifies, private key decrypts/signs (RSA, ECC), slower, used for the key exchange and certificates. TLS uses both.

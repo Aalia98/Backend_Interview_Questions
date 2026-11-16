@@ -1,6 +1,6 @@
 ## Part 1 - Interview Answers
 
-# 1. What is an index?
+# What is an index?
 
 - An index is a separate data structure, usually a B-tree, managed by the database. It stores the column values in sorted order along with pointers to the actual rows, so the database can find rows efficiently instead of scanning the entire table. It is just like a book's index: if I want chapter nine, I use the page number to jump straight to it, and I don't have to turn every page.
 
@@ -47,6 +47,10 @@
 # What is a composite index? When would you create one?
 
 - A composite index is an index on multiple columns. I create one when my queries filter on those columns together, for example an index on user_id and status instead of two separate indexes. The column order matters because of the leftmost prefix rule.
+
+# Leftmost prefix rule?
+
+- 
 
 # 2. Why do we need indexes?
 
